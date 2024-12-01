@@ -1,0 +1,19 @@
+[package]
+edition = "2021"
+name = "advent_of_code_2024"
+version = "0.1.0"
+
+[dependencies]
+ahash = "0.8.11"
+rayon = "1.10.0"
+voxell_timer = "1.1.1"
+
+[profile.release]
+codegen-units = 1
+debug = false
+debug-assertions = false
+lto = true
+opt-level = 3
+overflow-checks = false
+strip = true
+incremental = false
