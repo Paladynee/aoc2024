@@ -1,5 +1,7 @@
 use rayon::prelude::*;
 
+use crate::solver::SolverSentinel;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Gradually {
     Increasing,
@@ -8,7 +10,7 @@ pub enum Gradually {
 }
 
 #[inline]
-pub fn solve_part_1(input: &str) -> i32 {
+pub fn solve_part_1(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
     input
         .lines()
         .filter(|line| {
@@ -143,7 +145,7 @@ pub fn solve_part_1(input: &str) -> i32 {
 
 // brute force approach
 #[inline]
-pub fn solve_part_2(input: &str) -> i32 {
+pub fn solve_part_2(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
     input
         .par_lines()
         .filter(|line| {

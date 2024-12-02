@@ -1,23 +1,16 @@
-use std::{
-    fmt::{Debug, Display},
-    sync::{mpsc, LazyLock, Mutex},
-    thread::JoinHandle,
-    time::Duration,
-};
+use core::fmt::Debug;
+use core::fmt::Display;
+use core::time::Duration;
+use std::sync::mpsc;
+use std::thread::{self, JoinHandle};
 
 use voxell_timer::time;
 
-pub struct PrintThreadDetails {
+#[derive(Debug)]
+pub struct ThreadDetails {
     pub tx: mpsc::Sender<ThreadMessage>,
     #[forbid(unused)]
     pub handle: Option<JoinHandle<()>>,
-}
-
-impl Drop for SolverSentinel {
-    fn drop(&mut self) {
-        PRINT_THREAD.lock().unwrap().tx.send(ThreadMessage::Close).unwrap();
-        PRINT_THREAD.lock().unwrap().handle.take().unwrap().join().unwrap();
-    }
 }
 
 pub enum ThreadMessage {
@@ -25,39 +18,39 @@ pub enum ThreadMessage {
     Close,
 }
 
-pub static PRINT_THREAD: LazyLock<Mutex<PrintThreadDetails>> = LazyLock::new(|| {
-    let (tx, rx) = mpsc::channel();
-    let handle = std::thread::spawn(move || {
-        while let Ok(thread_msg) = rx.recv() {
-            match thread_msg {
-                ThreadMessage::Message(msg) => println!("{}", msg),
-                ThreadMessage::Close => break,
-            };
-        }
-    });
-    let handle = Some(handle);
-    Mutex::new(PrintThreadDetails { tx, handle })
-});
-
 #[macro_export]
-macro_rules! threaded_println {
-    ($($args:tt)*) => {{
-        let tx_clone = $crate::solver::PRINT_THREAD.lock().unwrap().tx.clone();
+macro_rules! sentinel_println {
+    (Sentinel: $sent:expr, $($args:tt)*) => {{
+        let tx_clone = $sent.print_thread.tx.clone();
         let msg = format!($($args)*);
         tx_clone.send($crate::solver::ThreadMessage::Message(msg)).unwrap();
+
     }};
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Debug)]
 pub struct SolverSentinel {
     total_time: Duration,
+    print_thread: ThreadDetails,
 }
 
 impl SolverSentinel {
     #[inline]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
+        let (tx, rx) = mpsc::channel();
+        let handle = thread::spawn(move || {
+            while let Ok(thread_msg) = rx.recv() {
+                match thread_msg {
+                    ThreadMessage::Message(msg) => println!("{}", msg),
+                    ThreadMessage::Close => break,
+                };
+            }
+        });
+        let handle = Some(handle);
+        let det = ThreadDetails { tx, handle };
         Self {
             total_time: Duration::from_secs(0),
+            print_thread: det,
         }
     }
 
@@ -65,10 +58,19 @@ impl SolverSentinel {
     pub fn solve<Func, Ret>(&mut self, puzzle: usize, part: usize, input: &'static str, f: Func)
     where
         Ret: Debug + Display + Send + 'static,
-        Func: FnOnce(&str) -> Ret,
+        Func: FnOnce(&str, &mut Self) -> Ret,
     {
-        let (res, dur) = time!(f(input));
+        let (res, dur) = time!(f(input, self));
         self.total_time += dur;
-        threaded_println!("Solved puzzle {} part {}: {}\n\t\t\t^ this took {:?}", puzzle, part, res, dur);
+        sentinel_println!(Sentinel: self, "Solved puzzle {} part {}: {}\n\t\t\t^ this took {:?}", puzzle, part, res, dur);
+    }
+}
+
+impl Drop for SolverSentinel {
+    fn drop(&mut self) {
+        let _ = self.print_thread.tx.send(ThreadMessage::Close);
+        if let Some(handle) = self.print_thread.handle.take() {
+            let _ = handle.join();
+        }
     }
 }

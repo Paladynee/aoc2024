@@ -3,6 +3,8 @@ use std::io::Read;
 
 use voxell_timer::time;
 
+use crate::solver::SolverSentinel;
+
 pub struct Lists {
     left: Vec<i32>,
     right: Vec<i32>,
@@ -24,11 +26,11 @@ impl Lists {
 }
 
 #[inline]
-pub fn solve_part_1(input: &str) -> i32 {
+pub fn solve_part_1(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
     let (aux, _loop_time) = time!(parse(input));
     let (mut left, mut right) = aux.into_inner();
 
-    let (_, _sort_time) = time!({
+    let ((), _sort_time) = time!({
         left.par_sort_unstable();
         right.par_sort_unstable();
     });
@@ -44,7 +46,7 @@ pub fn solve_part_1(input: &str) -> i32 {
 }
 
 #[inline]
-pub fn solve_part_2(input: &str) -> i32 {
+pub fn solve_part_2(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
     let aux = parse(input);
     // discriminants 0..=9999 cannot be constructed, so we can reduce the allocation by 10% (99999 -> 90000)
     let mut occurence_buckets: Vec<i32> = vec![0; 90000];
@@ -103,8 +105,7 @@ pub fn parse(input: &str) -> Lists {
     loop {
         let mut tmp: [u8; 5] = [0; 5];
         match reader.read(&mut tmp) {
-            Err(_) => break,
-            Ok(0) => break,
+            Err(_) | Ok(0) => break,
             Ok(_) => {}
         }
 
@@ -122,8 +123,7 @@ pub fn parse(input: &str) -> Lists {
         *reader = &reader[3..];
 
         match reader.read(&mut tmp) {
-            Err(_) => break,
-            Ok(0) => break,
+            Err(_) | Ok(0) => break,
             Ok(_) => {}
         }
 
