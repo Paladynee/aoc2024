@@ -69,6 +69,6 @@ impl SolverSentinel {
     {
         let (res, dur) = time!(f(input));
         self.total_time += dur;
-        threaded_println!("Solved puzzle {} part {}: {}\n\t^ this took {:?}", puzzle, part, res, dur);
+        threaded_println!("Solved puzzle {} part {}: {}\n\t\t\t^ this took {:?}", puzzle, part, res, dur);
     }
 }
