@@ -1,16 +1,16 @@
 use crate::solver::SolverSentinel;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-struct String2D {
-    lines: Vec<Vec<u8>>,
+struct String2D<'a> {
+    lines: Vec<&'a [u8]>,
     width: usize,
     height: usize,
 }
 
-impl String2D {
+impl<'a> String2D<'a> {
     #[inline]
-    pub fn from(s: &[u8]) -> Option<Self> {
-        let lines: Vec<Vec<u8>> = s.split(|n| *n == b'\n' || *n == b'\r').map(|l| l.to_vec()).collect();
+    pub fn from(s: &'a [u8]) -> Option<Self> {
+        let lines: Vec<_> = s.split(|n| *n == b'\n' || *n == b'\r').collect();
         let width = lines.first().map(|l| l.len())?;
         let height = lines.len();
         Some(Self { lines, width, height })
@@ -22,107 +22,110 @@ impl String2D {
     }
 
     #[inline]
-    pub fn check_xmas_successively_for_one_direction(&self, x: usize, y: usize, direction: Direction) -> Option<()> {
-        if self.get_2d(x, y) != Some(b'X') {
-            return None;
+    pub fn check_xmas_successively_for_one_direction(&self, x: usize, y: usize, direction: Direction) -> bool {
+        let Some((nx, ny)) = direction.offset_times(x, y, 3) else { return false };
+        if self.get_2d(nx, ny) != Some(b'S') {
+            return false;
         }
 
-        let (x, y) = direction.offset(x, y)?;
-        if self.get_2d(x, y) != Some(b'M') {
-            return None;
+        let Some((nx, ny)) = direction.offset_times(x, y, 2) else { return false };
+        if self.get_2d(nx, ny) != Some(b'A') {
+            return false;
         }
 
-        let (x, y) = direction.offset(x, y)?;
-        if self.get_2d(x, y) != Some(b'A') {
-            return None;
+        let Some((nx, ny)) = direction.offset_times(x, y, 1) else { return false };
+        if self.get_2d(nx, ny) != Some(b'M') {
+            return false;
         }
 
-        let (x, y) = direction.offset(x, y)?;
-        if self.get_2d(x, y) != Some(b'S') {
-            return None;
-        }
-
-        Some(())
+        true
     }
 
     #[inline]
     pub fn check_xmas_successively_for_all_directions(&self, x: usize, y: usize) -> usize {
-        Direction::ALL
-            .iter()
-            .filter(|&&d| self.check_xmas_successively_for_one_direction(x, y, d).is_some())
-            .count()
+        let mut count = 0;
+        for d in Direction::ALL {
+            if self.check_xmas_successively_for_one_direction(x, y, d) {
+                count += 1;
+            }
+        }
+        count
     }
 
     #[inline]
     pub fn check_xmas_all_locations_for_all_directions(&self) -> usize {
-        let mut count = 0;
-        for y in 0..self.height {
-            for x in 0..self.width {
-                count += self.check_xmas_successively_for_all_directions(x, y);
-            }
-        }
-        count
+        self.lines.iter().enumerate().fold(0_usize, |count, (y, line)| {
+            count
+                + line
+                    .iter()
+                    .enumerate()
+                    .filter(|&(_, &c)| c == b'X')
+                    .map(|(x, _)| self.check_xmas_successively_for_all_directions(x, y))
+                    .sum::<usize>()
+        })
     }
 
     #[inline]
-    pub fn check_mas(&self, ax: usize, ay: usize) -> Option<()> {
-        if self.get_2d(ax, ay) != Some(b'A') {
-            return None;
-        }
-
-        let (x, y) = Direction::TopRight.offset(ax, ay)?;
-
-        match self.get_2d(x, y)? {
-            b'S' => {
-                let (x, y) = Direction::BottomLeft.offset(ax, ay)?;
-                if self.get_2d(x, y) != Some(b'M') {
-                    return None;
-                }
-            }
-            b'M' => {
-                let (x, y) = Direction::BottomLeft.offset(ax, ay)?;
-                if self.get_2d(x, y) != Some(b'S') {
-                    return None;
-                }
-            }
-
-            _ => return None,
+    pub fn check_mas(&self, ax: usize, ay: usize) -> bool {
+        let Some((x, y)) = Direction::TopRight.offset(ax, ay) else {
+            return false;
         };
 
-        let (x, y) = Direction::TopLeft.offset(ax, ay)?;
-
-        match self.get_2d(x, y)? {
-            b'S' => {
-                let (x, y) = Direction::BottomRight.offset(ax, ay)?;
+        match self.get_2d(x, y) {
+            Some(b'S') => {
+                let Some((x, y)) = Direction::BottomLeft.offset(ax, ay) else {
+                    return false;
+                };
                 if self.get_2d(x, y) != Some(b'M') {
-                    return None;
+                    return false;
                 }
             }
-
-            b'M' => {
-                let (x, y) = Direction::BottomRight.offset(ax, ay)?;
+            Some(b'M') => {
+                let Some((x, y)) = Direction::BottomLeft.offset(ax, ay) else {
+                    return false;
+                };
                 if self.get_2d(x, y) != Some(b'S') {
-                    return None;
+                    return false;
                 }
             }
+            _ => return false,
+        };
 
-            _ => return None,
+        let Some((x, y)) = Direction::TopLeft.offset(ax, ay) else { return false };
+
+        match self.get_2d(x, y) {
+            Some(b'S') => {
+                let Some((x, y)) = Direction::BottomRight.offset(ax, ay) else {
+                    return false;
+                };
+                if self.get_2d(x, y) != Some(b'M') {
+                    return false;
+                }
+            }
+            Some(b'M') => {
+                let Some((x, y)) = Direction::BottomRight.offset(ax, ay) else {
+                    return false;
+                };
+                if self.get_2d(x, y) != Some(b'S') {
+                    return false;
+                }
+            }
+            _ => return false,
         }
 
-        Some(())
+        true
     }
 
     #[inline]
     pub fn check_mas_all_locations(&self) -> usize {
-        let mut count = 0;
-        for y in 0..self.height {
-            for x in 0..self.width {
-                if self.check_mas(x, y).is_some() {
-                    count += 1;
-                }
-            }
-        }
-        count
+        self.lines.iter().enumerate().fold(0_usize, |count, (y, line)| {
+            count
+                + line
+                    .iter()
+                    .enumerate()
+                    .filter(|&(x, &c)| if c == b'A' { self.check_mas(x, y) } else { false })
+                    .count()
+        })
     }
 }
 
@@ -161,6 +164,20 @@ impl Direction {
             Self::BottomLeft => (x.checked_sub(1)?, y.checked_add(1)?),
             Self::Bottom => (x, y.checked_add(1)?),
             Self::BottomRight => (x.checked_add(1)?, y.checked_add(1)?),
+        })
+    }
+
+    #[inline]
+    pub fn offset_times(self, x: usize, y: usize, factor: usize) -> Option<(usize, usize)> {
+        Some(match self {
+            Self::TopLeft => (x.checked_sub(factor)?, y.checked_sub(factor)?),
+            Self::Top => (x, y.checked_sub(factor)?),
+            Self::TopRight => (x.checked_add(factor)?, y.checked_sub(factor)?),
+            Self::Left => (x.checked_sub(factor)?, y),
+            Self::Right => (x.checked_add(factor)?, y),
+            Self::BottomLeft => (x.checked_sub(factor)?, y.checked_add(factor)?),
+            Self::Bottom => (x, y.checked_add(factor)?),
+            Self::BottomRight => (x.checked_add(factor)?, y.checked_add(factor)?),
         })
     }
 }
