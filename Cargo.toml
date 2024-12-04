@@ -6,7 +6,16 @@ version = "0.1.0"
 [dependencies]
 ahash = "0.8.11"
 rayon = "1.10.0"
+regex = "1.11.1"
 voxell_timer = "1.1.1"
+
+[profile.dev]
+debug = true
+debug-assertions = true
+incremental = true
+opt-level = 2
+overflow-checks = true
+codegen-units = 64
 
 [profile.release]
 codegen-units = 1

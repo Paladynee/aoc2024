@@ -10,7 +10,7 @@ pub enum Gradually {
 }
 
 #[inline]
-pub fn solve_part_1(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
+pub fn solve_part_1(input: &str, _sentinel: &mut SolverSentinel) -> usize {
     input
         .lines()
         .filter(|line| {
@@ -56,7 +56,7 @@ pub fn solve_part_1(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
 
             true
         })
-        .count() as i32
+        .count()
 }
 
 //  use std::hint::{assert_unchecked, unreachable_unchecked};
@@ -145,7 +145,7 @@ pub fn solve_part_1(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
 
 // brute force approach
 #[inline]
-pub fn solve_part_2(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
+pub fn solve_part_2(input: &str, _sentinel: &mut SolverSentinel) -> usize {
     input
         .par_lines()
         .filter(|line| {
@@ -161,7 +161,7 @@ pub fn solve_part_2(input: &str, _sentinel: &mut SolverSentinel) -> i32 {
                 check(nums.as_slice())
             })
         })
-        .count() as i32
+        .count()
 }
 
 #[inline]

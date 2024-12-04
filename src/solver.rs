@@ -20,7 +20,7 @@ pub enum ThreadMessage {
 
 #[macro_export]
 macro_rules! sentinel_println {
-    (Sentinel: $sent:expr, $($args:tt)*) => {{
+    (Sentinel: $sent:expr, println!($($args:tt)*)) => {{
         let tx_clone = $sent.print_thread.tx.clone();
         let msg = format!($($args)*);
         tx_clone.send($crate::solver::ThreadMessage::Message(msg)).unwrap();
@@ -28,10 +28,17 @@ macro_rules! sentinel_println {
     }};
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PuzzleDetails {
+    puzzle: usize,
+    part: usize,
+}
+
 #[derive(Debug)]
 pub struct SolverSentinel {
-    total_time: Duration,
-    print_thread: ThreadDetails,
+    pub total_time: Duration,
+    pub print_thread: ThreadDetails,
+    pub solved_puzzles: Vec<PuzzleDetails>,
 }
 
 impl SolverSentinel {
@@ -48,9 +55,11 @@ impl SolverSentinel {
         });
         let handle = Some(handle);
         let det = ThreadDetails { tx, handle };
+
         Self {
             total_time: Duration::from_secs(0),
             print_thread: det,
+            solved_puzzles: Vec::new(),
         }
     }
 
@@ -61,16 +70,29 @@ impl SolverSentinel {
         Func: FnOnce(&str, &mut Self) -> Ret,
     {
         let (res, dur) = time!(f(input, self));
+        sentinel_println!(
+            Sentinel: self,
+            println!(
+                "Solved puzzle {} part {}: {}\n\t\t\t^ this took {:?}\n____________________________________--------",
+                puzzle, part, res, dur
+            )
+        );
         self.total_time += dur;
-        sentinel_println!(Sentinel: self, "Solved puzzle {} part {}: {}\n\t\t\t^ this took {:?}", puzzle, part, res, dur);
+        self.solved_puzzles.push(PuzzleDetails { puzzle, part });
     }
-}
 
-impl Drop for SolverSentinel {
-    fn drop(&mut self) {
-        let _ = self.print_thread.tx.send(ThreadMessage::Close);
-        if let Some(handle) = self.print_thread.handle.take() {
-            let _ = handle.join();
-        }
+    #[inline]
+    pub fn finalize(mut self) {
+        sentinel_println!(
+            Sentinel: self,
+            println!(
+                "Solved {} puzzles.\n^^^^^^ all puzzles took a total of {:?}",
+                self.solved_puzzles.len(),
+                self.total_time
+            )
+        );
+
+        self.print_thread.tx.send(ThreadMessage::Close).unwrap();
+        self.print_thread.handle.take().unwrap().join().unwrap();
     }
 }

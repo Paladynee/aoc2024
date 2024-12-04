@@ -1,3 +1,5 @@
+use puzzles::*;
+use solver::SolverSentinel;
 use std::sync::LazyLock;
 
 macro_rules! lazy_file_include {
@@ -8,14 +10,14 @@ macro_rules! lazy_file_include {
 
 lazy_file_include!(INPUT1, "input1.txt");
 lazy_file_include!(INPUT2, "input2.txt");
+lazy_file_include!(INPUT3, "input3.txt");
+lazy_file_include!(INPUT4, "input4.txt");
 
 mod puzzles;
 mod solver;
 
-use puzzles::*;
-
 fn main() {
-    let mut sentinel = solver::SolverSentinel::new();
+    let mut sentinel = SolverSentinel::new();
 
     // day 1
     sentinel.solve(1, 1, &INPUT1, puzzle1::solve_part_1);
@@ -24,4 +26,14 @@ fn main() {
     // day 2
     sentinel.solve(2, 1, &INPUT2, puzzle2::solve_part_1);
     sentinel.solve(2, 2, &INPUT2, puzzle2::solve_part_2);
+
+    // day 3
+    sentinel.solve(3, 1, &INPUT3, puzzle3::solve_part_1);
+    sentinel.solve(3, 2, &INPUT3, puzzle3::solve_part_2);
+
+    // day 4
+    sentinel.solve(4, 1, &INPUT4, puzzle4::solve_part_1);
+    sentinel.solve(4, 2, &INPUT4, puzzle4::solve_part_2);
+
+    sentinel.finalize();
 }
