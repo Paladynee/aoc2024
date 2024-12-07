@@ -12,6 +12,9 @@ lazy_file_include!(INPUT1, "input1.txt");
 lazy_file_include!(INPUT2, "input2.txt");
 lazy_file_include!(INPUT3, "input3.txt");
 lazy_file_include!(INPUT4, "input4.txt");
+lazy_file_include!(INPUT5, "input5.txt");
+lazy_file_include!(INPUT6, "input6.txt");
+lazy_file_include!(INPUT7, "input7.txt");
 
 mod puzzles;
 mod solver;
@@ -34,6 +37,19 @@ fn main() {
     // day 4
     sentinel.solve(4, 1, &INPUT4, puzzle4::solve_part_1);
     sentinel.solve(4, 2, &INPUT4, puzzle4::solve_part_2);
+
+    // day 5
+    sentinel.solve(5, 1, &INPUT5, puzzle5::solve_part_1);
+    // unsolved
+    // sentinel.solve(5, 2, &INPUT5, puzzle5::solve_part_2);
+
+    // day 6
+    sentinel.solve(6, 1, &INPUT6, puzzle6::solve_part_1);
+    sentinel.solve(6, 2, &INPUT6, puzzle6::solve_part_2);
+
+    // day 7
+    sentinel.solve(7, 1, &INPUT7, puzzle7::solve_part_1);
+    // sentinel.solve(7, 2, &INPUT7, puzzle7::solve_part_2);
 
     sentinel.finalize();
 }

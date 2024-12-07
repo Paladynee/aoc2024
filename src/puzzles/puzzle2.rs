@@ -1,5 +1,3 @@
-use rayon::prelude::*;
-
 use crate::solver::SolverSentinel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -147,7 +145,7 @@ pub fn solve_part_1(input: &str, _sentinel: &mut SolverSentinel) -> usize {
 #[inline]
 pub fn solve_part_2(input: &str, _sentinel: &mut SolverSentinel) -> usize {
     input
-        .par_lines()
+        .lines()
         .filter(|line| {
             let nums = line
                 .trim()
